@@ -1,0 +1,18 @@
+{
+ "img/hero.jpg": {
+  "tool": "higgsfield",
+  "prompt": "nursery ceiling with a felt star mobile at night (job b113aa02) gpt_image_2_5"
+ },
+ "snd/note.mp3": {
+  "tool": "elevenlabs",
+  "prompt": "music box celesta note (flow EelQE8njkaa9l5VyOt45)"
+ },
+ "snd/twinkle.mp3": {
+  "tool": "elevenlabs",
+  "prompt": "sparkling twinkle shimmer (flow EelQE8njkaa9l5VyOt45)"
+ },
+ "snd/lullaby.mp3": {
+  "tool": "elevenlabs",
+  "prompt": "music box lullaby, eleven_music_v2_5 (flow EelQE8njkaa9l5VyOt45)"
+ }
+}

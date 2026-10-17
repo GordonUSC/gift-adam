@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- STYLE: Nursery-ceiling star mobile at night (midnight indigo, honey gold felt stars, Cormorant Garamond with Nunito) | WHY: Gordon is godfather to Adam's newborn son Bo, and Gordon wrote that he is "so honored to be Bo's godfather", so the gift is a mobile of stars Adam lights one by one until they spell Bo's name in the sky | ALT: A baby-photo frame, rejected because the brief keeps babies and people out of the art and leads with Bo through objects -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bo's Sky</title>
+<meta name="description" content="A star mobile for Adam and Bo.">
+<meta property="og:title" content="Bo's Sky, for Adam">
+<meta property="og:image" content="https://gordonusc.github.io/gift-adam/img/hero.jpg">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Nunito:wght@600;800&display=swap">
+<style>
+:root{--gold:#f5cf7a;--ink:#0d1433;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#070b1f;color:#fdf6e3;font:16px/1.45 Nunito,system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.stage{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(100vw,calc(100svh*9/16));overflow:hidden}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.62) saturate(.9);transition:filter 2s}
+.lit .bg{filter:brightness(.85) saturate(1.05)}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.top{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 22px);text-align:center;padding:0 20px;text-shadow:0 2px 16px #000c;pointer-events:none}
+.top small{font-weight:800;font-size:11px;letter-spacing:.3em;color:var(--gold)}
+.top h1{font:600 clamp(38px,12vw,58px)/1 "Cormorant Garamond",Georgia,serif;margin:6px 0}
+.top p{margin:0 auto;max-width:28ch;font-size:15px}
+.count{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);text-align:center;font-weight:800;font-size:13px;letter-spacing:.2em;color:var(--gold);text-shadow:0 2px 10px #000;pointer-events:none}
+.end{position:absolute;left:18px;right:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);text-align:center;opacity:0;transition:opacity 1.6s;pointer-events:none;text-shadow:0 2px 16px #000}
+.end.on{opacity:1}
+.end h2{font:italic 500 clamp(30px,9vw,42px)/1.1 "Cormorant Garamond",serif;margin:0 0 8px;color:#fff}
+.end p{margin:0 auto;max-width:30ch;font-size:15px}
+.foot{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);text-align:center;font-size:11px;opacity:.7;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <img class="bg" src="img/hero.jpg" alt="A felt star mobile hanging from a midnight blue nursery ceiling painted with tiny gold stars">
+  <canvas id="c"></canvas>
+  <div class="top"><small>FOR ADAM</small><h1>Bo's Sky</h1><p>A mobile of stars for a brand new little one. Tap each star to light it. Sound on, softly.</p></div>
+  <div class="count" id="count">0 OF 9 STARS</div>
+  <div class="end" id="end"><h2>Welcome to the world, Bo.</h2><p>Gordon is so honored to be your godfather. The sky is yours.</p></div>
+  <div class="foot">made by Darby, Gordon's AI assistant, with love from Gordon</div>
+</div>
+<script>
+// ElevenLabs sound design: music box note, twinkle shimmer, lullaby. Code only mixes (pitch, levels).
+const SND=['note','twinkle','lullaby'];
+let ac=null, master=null, bufs={};
+function audio(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=.85; master.connect(ac.destination); SND.forEach(load);}catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); return ac; }
+async function load(n){ if(bufs[n]) return bufs[n]; try{ const r=await fetch('snd/'+n+'.mp3'); const a=await r.arrayBuffer(); bufs[n]=await new Promise((ok,no)=>ac.decodeAudioData(a,ok,no)); }catch(e){} return bufs[n]; }
+async function play(n,vol=1,loop=false,rate=1){ if(!audio()) return null; const b=await load(n); if(!b) return null; const s=ac.createBufferSource(), g=ac.createGain(); s.buffer=b; s.loop=loop; s.playbackRate.value=rate; g.gain.value=vol; s.connect(g).connect(master); s.start(); return {s,g}; }
+const c=document.getElementById('c'), x=c.getContext('2d'), D=Math.min(devicePixelRatio||1,2);
+function size(){ c.width=c.clientWidth*D; c.height=c.clientHeight*D; } size(); addEventListener('resize',size);
+// stars arranged as the letters B and O, hanging from threads; positions in stage units
+const PTS=[[.24,.40],[.24,.50],[.24,.60],[.34,.43],[.34,.56],[.62,.42],[.74,.50],[.62,.60],[.50,.50]];
+const LINES=[[0,1],[1,2],[0,3],[3,1],[1,4],[4,2],[5,6],[6,7],[7,8],[8,5]];
+const SCALE=[0,2,4,7,9,12,14,16,19];
+const stars=PTS.map((p,i)=>({u:p[0],v:p[1],on:0,ph:i*1.3,glow:0}));
+let lit=0, done=false, lineK=0, sparks=[];
+function starPath(cx,cy,r){ x.beginPath(); for(let i=0;i<10;i++){ const rr=i%2?r*.45:r, a=-Math.PI/2+i*Math.PI/5; x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } x.closePath(); }
+function pos(s,t){ const sway=Math.sin(t/1400+s.ph)*6*D; return [s.u*c.width+sway, s.v*c.height+Math.cos(t/1700+s.ph)*3*D]; }
+c.addEventListener('pointerdown',e=>{ audio(); const r=c.getBoundingClientRect(), px=(e.clientX-r.left)*D, py=(e.clientY-r.top)*D, t=performance.now();
+  let best=-1, bd=1e9; stars.forEach((s,i)=>{ if(s.on) return; const [sx,sy]=pos(s,t), d=Math.hypot(px-sx,py-sy); if(d<bd){bd=d;best=i;} });
+  if(best<0||bd>70*D) return; const s=stars[best]; s.on=1; s.glow=1; lit++; play('note',.7,false,Math.pow(2,SCALE[lit-1]/12)*.85);
+  const [sx,sy]=pos(s,t); for(let i=0;i<14;i++){ const a=i/14*Math.PI*2; sparks.push({x:sx,y:sy,vx:Math.cos(a)*2*D,vy:Math.sin(a)*2*D,a:1}); }
+  document.getElementById('count').textContent=lit+' OF 9 STARS';
+  if(lit===stars.length&&!done){ done=true; setTimeout(()=>{ play('twinkle',.8); play('lullaby',.6); document.getElementById('stage').classList.add('lit'); document.getElementById('count').style.opacity=0; document.getElementById('end').classList.add('on'); },500); } });
+(function loop(t){ x.clearRect(0,0,c.width,c.height);
+  if(done) lineK=Math.min(lineK+.012,1);
+  if(lineK>0){ x.strokeStyle=`rgba(245,207,122,${.75*lineK})`; x.lineWidth=2*D; LINES.forEach(([a,b])=>{ const [ax,ay]=pos(stars[a],t),[bx,by]=pos(stars[b],t); x.beginPath(); x.moveTo(ax,ay); x.lineTo(ax+(bx-ax)*lineK,ay+(by-ay)*lineK); x.stroke(); }); }
+  stars.forEach(s=>{ const [sx,sy]=pos(s,t); x.strokeStyle='rgba(253,246,227,.35)'; x.lineWidth=1*D; x.beginPath(); x.moveTo(sx,0); x.lineTo(sx,sy-14*D); x.stroke();
+    s.glow*=.97; const r=(s.on?15:12)*D*(1+s.glow*.4);
+    if(s.on){ x.shadowColor='#f5cf7a'; x.shadowBlur=26*D; x.fillStyle='#ffe3a3'; } else { x.shadowBlur=0; x.fillStyle=`rgba(245,207,122,${.35+.15*Math.sin(t/500+s.ph)})`; }
+    starPath(sx,sy,r); x.fill(); x.shadowBlur=0; });
+  sparks.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.a-=.02; x.fillStyle=`rgba(255,227,163,${Math.max(p.a,0)})`; x.fillRect(p.x,p.y,2.5*D,2.5*D); }); sparks=sparks.filter(p=>p.a>0);
+  requestAnimationFrame(loop); })(0);
+</script>
+</body>
+</html>
